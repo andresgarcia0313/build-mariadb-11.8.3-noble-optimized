@@ -1,0 +1,115 @@
+[mysqld]
+# ======= Configuración optimizada para 128MB RAM y HDD lento =======
+skip-name-resolve=1
+skip-host-cache
+skip-external-locking
+performance_schema=0
+
+# --- Conexiones y thread pool ---
+# Ajustado para ~20 conexiones activas y picos concurrentes controlados
+max_connections = 30
+max_connect_errors = 100
+connect_timeout = 10
+wait_timeout = 300
+interactive_timeout = 300
+
+# Pool de hilos (mejor manejo en alta concurrencia sin crear N hilos)
+# Nota: requiere que el plugin/thread pool esté disponible en tu build de MariaDB
+thread_handling = pool-of-threads
+thread_pool_size = 2
+thread_pool_max_threads = 30
+thread_pool_idle_timeout = 60
+thread_cache_size = 8
+thread_stack = 192K
+
+# --- Buffers y cachés (crítico para 128MB) ---
+table_open_cache = 200
+table_definition_cache = 200
+open_files_limit = 1000
+host_cache_size = 0
+
+# InnoDB principal — mantener moderado para no OOM
+innodb_buffer_pool_size = 48M
+
+
+# Logs InnoDB
+innodb_log_file_size = 32M
+innodb_log_buffer_size = 8M
+
+# Durabilidad / rendimiento
+innodb_flush_log_at_trx_commit = 2
+# Para HDD lento, O_DIRECT suele dar mejor comportamiento evitando doble cache en kernel
+innodb_flush_method = O_DIRECT
+
+# I/O tuning para HDD lento
+innodb_io_capacity = 150
+innodb_io_capacity_max = 200
+innodb_read_io_threads = 4
+innodb_write_io_threads = 2
+innodb_flush_neighbors = 1
+
+innodb_file_per_table = 1
+innodb_purge_threads = 1
+innodb_adaptive_hash_index = 1
+innodb_lru_scan_depth = 256
+innodb_stats_on_metadata = 0
+innodb_stats_persistent = 1
+
+# Recomiendo NO desactivar doublewrite en producción con HDD lento
+# innodb_doublewrite = 1   # dejar por defecto (activa). Evita corrupción tras cortes.
+
+# --- Memoria por consulta / por hilo (mantener pequeñas) ---
+sort_buffer_size = 256K
+read_buffer_size = 128K
+read_rnd_buffer_size = 256K
+join_buffer_size = 256K
+
+# Tablas temporales en memoria (cuidado: cuenta por sesión)
+tmp_table_size = 8M
+max_heap_table_size = 8M
+
+# --- Query cache (opcional) ---
+# En muchos casos con escritura frecuente el query_cache perjudica. Mantener desactivado por defecto.
+query_cache_type = 0
+query_cache_size = 0
+
+# MyISAM mínima (si existiera)
+key_buffer_size = 4M
+
+# Motor para tablas temporales internas (si tmpfs no es viable)
+
+
+# --- Logs y monitoreo ---
+slow_query_log = 1
+slow_query_log_file = /var/lib/mysql/slow.log
+long_query_time = 2
+log_error = /var/lib/mysql/mysqld.log
+log_queries_not_using_indexes = 0
+general_log = 0
+
+# --- Red, timeouts ---
+net_read_timeout = 30
+net_write_timeout = 60
+
+# --- Seguridad básica ---
+local_infile = 0
+symbolic_links = 0
+
+# --- Aria (si aplica) ---
+aria_pagecache_buffer_size = 4M
+
+# --- Charset ---
+character_set_server = utf8mb4
+collation_server = utf8mb4_unicode_ci
+
+[mysqld_safe]
+log-error=/var/lib/mysql/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+
+[client]
+default_character_set = utf8mb4
+socket=/var/run/mysqld/mysqld.sock
+
+[mysql]
+no_auto_rehash
+show_warnings
