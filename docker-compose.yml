@@ -2,7 +2,7 @@ version: "3.8"
 services:
   mariadb:
     build: .
-    image: mariadb-optimized:1.0
+    image: mariadb-optimized:11.8.3-noble-lts
     container_name: mariadb-optimized
     restart: unless-stopped
     environment:
